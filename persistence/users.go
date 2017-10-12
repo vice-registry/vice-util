@@ -60,7 +60,7 @@ func GetUserByName(name string) (*models.User, error) {
 		log.Printf("Error in persistence GetUserByName: cannot open bucket %s: %s", "vice-users", err)
 		return nil, err
 	}
-	query := gocb.NewN1qlQuery("SELECT `id`, `username`, `password` FROM `vice-users` AS users WHERE `username`=$1;")
+	query := gocb.NewN1qlQuery("SELECT `id`, `username`, `password`, `fullname`, `email` FROM `vice-users` AS users WHERE `username`=$1;")
 	var params []interface{}
 	params = append(params, name)
 

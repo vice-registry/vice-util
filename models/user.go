@@ -17,6 +17,12 @@ import (
 
 type User struct {
 
+	// email
+	Email string `json:"email,omitempty"`
+
+	// fullname
+	Fullname string `json:"fullname,omitempty"`
+
 	// id
 	ID string `json:"id,omitempty"`
 
@@ -26,6 +32,10 @@ type User struct {
 	// username
 	Username string `json:"username,omitempty"`
 }
+
+/* polymorph User email false */
+
+/* polymorph User fullname false */
 
 /* polymorph User id false */
 

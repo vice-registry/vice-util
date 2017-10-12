@@ -99,6 +99,8 @@ func createAdminUser(cluster *gocb.Cluster) {
 	admin.ID = "admin"
 	admin.Username = "admin"
 	admin.Password = "admin"
+	admin.Email = "admin@vice-registry.org"
+	admin.Fullname = "Admin User"
 
 	// try to insert admin user
 	_, err = bucket.Insert(admin.ID, admin, 0)
