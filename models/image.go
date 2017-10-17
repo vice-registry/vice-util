@@ -20,8 +20,8 @@ import (
 
 type Image struct {
 
-	// content type
-	ContentType string `json:"content-type,omitempty"`
+	// contenttype
+	Contenttype string `json:"contenttype,omitempty"`
 
 	// environment reference
 	EnvironmentReference string `json:"environmentReference,omitempty"`
@@ -29,8 +29,8 @@ type Image struct {
 	// id
 	ID string `json:"id,omitempty"`
 
-	// image type
-	ImageType string `json:"image-type,omitempty"`
+	// imagetype
+	Imagetype string `json:"imagetype,omitempty"`
 
 	// imported
 	Imported bool `json:"imported,omitempty"`
@@ -41,17 +41,20 @@ type Image struct {
 	// specifics
 	Specifics interface{} `json:"specifics,omitempty"`
 
+	// title
+	Title string `json:"title,omitempty"`
+
 	// userid
 	Userid string `json:"userid,omitempty"`
 }
 
-/* polymorph Image content-type false */
+/* polymorph Image contenttype false */
 
 /* polymorph Image environmentReference false */
 
 /* polymorph Image id false */
 
-/* polymorph Image image-type false */
+/* polymorph Image imagetype false */
 
 /* polymorph Image imported false */
 
@@ -59,18 +62,20 @@ type Image struct {
 
 /* polymorph Image specifics false */
 
+/* polymorph Image title false */
+
 /* polymorph Image userid false */
 
 // Validate validates this image
 func (m *Image) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateContentType(formats); err != nil {
+	if err := m.validateContenttype(formats); err != nil {
 		// prop
 		res = append(res, err)
 	}
 
-	if err := m.validateImageType(formats); err != nil {
+	if err := m.validateImagetype(formats); err != nil {
 		// prop
 		res = append(res, err)
 	}
@@ -86,7 +91,7 @@ func (m *Image) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var imageTypeContentTypePropEnum []interface{}
+var imageTypeContenttypePropEnum []interface{}
 
 func init() {
 	var res []string
@@ -94,48 +99,48 @@ func init() {
 		panic(err)
 	}
 	for _, v := range res {
-		imageTypeContentTypePropEnum = append(imageTypeContentTypePropEnum, v)
+		imageTypeContenttypePropEnum = append(imageTypeContenttypePropEnum, v)
 	}
 }
 
 const (
-	// ImageContentTypeDiskRaw captures enum value "disk-raw"
-	ImageContentTypeDiskRaw string = "disk-raw"
-	// ImageContentTypeDiskQcow2 captures enum value "disk-qcow2"
-	ImageContentTypeDiskQcow2 string = "disk-qcow2"
-	// ImageContentTypeDiskVMDK captures enum value "disk-vmdk"
-	ImageContentTypeDiskVMDK string = "disk-vmdk"
-	// ImageContentTypeDockerFile captures enum value "docker-file"
-	ImageContentTypeDockerFile string = "docker-file"
-	// ImageContentTypeDockerImage captures enum value "docker-image"
-	ImageContentTypeDockerImage string = "docker-image"
-	// ImageContentTypePackerfile captures enum value "packerfile"
-	ImageContentTypePackerfile string = "packerfile"
+	// ImageContenttypeDiskRaw captures enum value "disk-raw"
+	ImageContenttypeDiskRaw string = "disk-raw"
+	// ImageContenttypeDiskQcow2 captures enum value "disk-qcow2"
+	ImageContenttypeDiskQcow2 string = "disk-qcow2"
+	// ImageContenttypeDiskVMDK captures enum value "disk-vmdk"
+	ImageContenttypeDiskVMDK string = "disk-vmdk"
+	// ImageContenttypeDockerFile captures enum value "docker-file"
+	ImageContenttypeDockerFile string = "docker-file"
+	// ImageContenttypeDockerImage captures enum value "docker-image"
+	ImageContenttypeDockerImage string = "docker-image"
+	// ImageContenttypePackerfile captures enum value "packerfile"
+	ImageContenttypePackerfile string = "packerfile"
 )
 
 // prop value enum
-func (m *Image) validateContentTypeEnum(path, location string, value string) error {
-	if err := validate.Enum(path, location, value, imageTypeContentTypePropEnum); err != nil {
+func (m *Image) validateContenttypeEnum(path, location string, value string) error {
+	if err := validate.Enum(path, location, value, imageTypeContenttypePropEnum); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Image) validateContentType(formats strfmt.Registry) error {
+func (m *Image) validateContenttype(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ContentType) { // not required
+	if swag.IsZero(m.Contenttype) { // not required
 		return nil
 	}
 
 	// value enum
-	if err := m.validateContentTypeEnum("content-type", "body", m.ContentType); err != nil {
+	if err := m.validateContenttypeEnum("contenttype", "body", m.Contenttype); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-var imageTypeImageTypePropEnum []interface{}
+var imageTypeImagetypePropEnum []interface{}
 
 func init() {
 	var res []string
@@ -143,33 +148,33 @@ func init() {
 		panic(err)
 	}
 	for _, v := range res {
-		imageTypeImageTypePropEnum = append(imageTypeImageTypePropEnum, v)
+		imageTypeImagetypePropEnum = append(imageTypeImagetypePropEnum, v)
 	}
 }
 
 const (
-	// ImageImageTypeImplicit captures enum value "implicit"
-	ImageImageTypeImplicit string = "implicit"
-	// ImageImageTypeDeclarative captures enum value "declarative"
-	ImageImageTypeDeclarative string = "declarative"
+	// ImageImagetypeImplicit captures enum value "implicit"
+	ImageImagetypeImplicit string = "implicit"
+	// ImageImagetypeDeclarative captures enum value "declarative"
+	ImageImagetypeDeclarative string = "declarative"
 )
 
 // prop value enum
-func (m *Image) validateImageTypeEnum(path, location string, value string) error {
-	if err := validate.Enum(path, location, value, imageTypeImageTypePropEnum); err != nil {
+func (m *Image) validateImagetypeEnum(path, location string, value string) error {
+	if err := validate.Enum(path, location, value, imageTypeImagetypePropEnum); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Image) validateImageType(formats strfmt.Registry) error {
+func (m *Image) validateImagetype(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ImageType) { // not required
+	if swag.IsZero(m.Imagetype) { // not required
 		return nil
 	}
 
 	// value enum
-	if err := m.validateImageTypeEnum("image-type", "body", m.ImageType); err != nil {
+	if err := m.validateImagetypeEnum("imagetype", "body", m.Imagetype); err != nil {
 		return err
 	}
 

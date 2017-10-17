@@ -29,6 +29,9 @@ type Deployment struct {
 	// imageid
 	Imageid string `json:"imageid,omitempty"`
 
+	// title
+	Title string `json:"title,omitempty"`
+
 	// userid
 	Userid string `json:"userid,omitempty"`
 }
@@ -40,6 +43,8 @@ type Deployment struct {
 /* polymorph Deployment id false */
 
 /* polymorph Deployment imageid false */
+
+/* polymorph Deployment title false */
 
 /* polymorph Deployment userid false */
 

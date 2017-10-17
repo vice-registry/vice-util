@@ -29,6 +29,9 @@ type Environment struct {
 	// runtimetechnology
 	Runtimetechnology *RuntimeTechnology `json:"runtimetechnology,omitempty"`
 
+	// title
+	Title string `json:"title,omitempty"`
+
 	// userid
 	Userid string `json:"userid,omitempty"`
 }
@@ -40,6 +43,8 @@ type Environment struct {
 /* polymorph Environment managementlayer false */
 
 /* polymorph Environment runtimetechnology false */
+
+/* polymorph Environment title false */
 
 /* polymorph Environment userid false */
 
