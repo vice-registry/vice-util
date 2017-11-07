@@ -63,12 +63,13 @@ func createBucket(cluster *gocb.Cluster, clusterManager *gocb.ClusterManager, bu
 	if !bucketExists(clusterManager, bucketname) {
 		log.Fatalf("Cannot find created bucket %s.", bucketname)
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		testBucket, err := cluster.OpenBucket(bucketname, couchbaseCredentials.Password)
 		if err != nil {
 			log.Printf("Testing availability of bucket %s (try %d/10): %s", bucketname, i, err)
 			time.Sleep(1000 * time.Millisecond)
 		} else {
+			log.Printf("Timeout waiting for new bucket %s.", bucketname)
 			testBucket.Close()
 			// bucket available. go on.
 			break
