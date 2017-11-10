@@ -1,33 +1,26 @@
 package persistence
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/vice-registry/vice-util/models"
-	gocb "gopkg.in/couchbase/gocb.v1"
+	r "gopkg.in/gorethink/gorethink.v3"
 )
+
+var tableDeployments = "deployments"
 
 // CreateDeployment creates the provided deployment
 func CreateDeployment(item *models.Deployment) (*models.Deployment, error) {
 	id := GenerateID(defaultIDLength)
 	item.ID = id
-	bucket, err := couchbaseCredentials.Cluster.OpenBucket("vice-deployments", couchbaseCredentials.Password)
-	if err != nil {
-		log.Printf("Error in persistence CreateDeployment: cannot open bucket %s: %s", "vice-deployments", err)
-		return nil, err
-	}
-	defer bucket.Close()
-	_, err = bucket.Insert(id, item, 0)
-	if err != nil {
-		log.Printf("Error in persistence CreateDeployment: cannot create item %+v in bucket %s: %s", item, "vice-deployments", err)
-		return nil, err
-	}
+	createItem(item, tableDeployments)
 	return item, nil
 }
 
 // UpdateDeployment updates the provided deployment
 func UpdateDeployment(item *models.Deployment) (*models.Deployment, error) {
-	err := updateItem(item, item.ID, "vice-deployments")
+	err := updateItem(item, item.ID, tableDeployments)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +29,7 @@ func UpdateDeployment(item *models.Deployment) (*models.Deployment, error) {
 
 // DeleteDeployment returns a single deployment by id
 func DeleteDeployment(id string) error {
-	err := deleteItem(id, "vice-deployment")
+	err := deleteItem(id, tableDeployments)
 	if err != nil {
 		return err
 	}
@@ -45,40 +38,49 @@ func DeleteDeployment(id string) error {
 
 // GetDeployment returns a single deployment by id
 func GetDeployment(id string) (*models.Deployment, error) {
-	var item models.Deployment
-	err := getItem(&item, id, "vice-deployments")
+	cursor, err := r.DB(connectionProperties.Database).Table(tableDeployments).Get(id).Run(connectionProperties.Session)
 	if err != nil {
+		log.Printf("Error in persistence getItem: cannot get item %s from table %s: %s", id, tableDeployments, err)
+		return nil, err
+
+	}
+	if cursor.IsNil() {
+		// no results
+		log.Printf("No result for getItem on table %s and id %s", tableDeployments, id)
+		return nil, nil
+	}
+
+	var item models.Deployment
+	err = cursor.One(&item)
+	if err != nil {
+		fmt.Printf("Error scanning database result: %s", err)
 		return nil, err
 	}
+
 	return &item, nil
 }
 
 // GetDeployments returns an array of deployments of the authenticated user
 func GetDeployments(user *models.User) ([]*models.Deployment, error) {
-	query := gocb.NewN1qlQuery("SELECT deployments.* FROM `vice-deployments` AS deployments WHERE `userid` LIKE  $1;")
-	params := []interface{}{"%"}
-	if user != nil {
-		params = []interface{}{user.ID}
-	}
-	bucket, err := couchbaseCredentials.Cluster.OpenBucket("vice-deployments", couchbaseCredentials.Password)
+	table := tableDeployments
+	index := "Userid"
+	search := user.ID
+	resp, err := r.DB(connectionProperties.Database).Table(table).GetAllByIndex(index, search).Run(connectionProperties.Session)
 	if err != nil {
-		log.Printf("Error in persistence GetDeployments: cannot open bucket %s: %s", "vice-deployments", err)
+		log.Printf("Error in persistence getItemsByIndex: cannot query %s on index %s with value %s: %s", table, index, search, err)
 		return nil, err
 	}
-	rows, err := bucket.ExecuteN1qlQuery(query, params)
-	if err != nil {
-		log.Printf("Error in persistence GetDeployments: cannot run query on bucket %s: %s", "vice-deployments", err)
-		return nil, err
+	defer resp.Close()
+
+	if resp.IsNil() {
+		return nil, nil
 	}
+
 	var items []*models.Deployment
-	var item models.Deployment
-	for rows.Next(&item) {
-		copy := new(models.Deployment)
-		*copy = item
-		if item.ID != "" {
-			items = append(items, copy)
-		}
-		item = models.Deployment{}
+	err = resp.All(&items)
+	if err != nil {
+		log.Printf("Error in persistence getItemsByIndex: cannot read results for table %s on index %s with value %s: %s", table, index, search, err)
+		return nil, err
 	}
 	return items, nil
 }

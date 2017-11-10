@@ -1,37 +1,39 @@
 package persistence
 
 import (
+	"log"
 	"math/rand"
 
-	"log"
-
-	"gopkg.in/couchbase/gocb.v1"
+	r "gopkg.in/gorethink/gorethink.v3"
 )
 
 const idLetterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 const defaultIDLength int = 6
 
-var couchbaseCredentials = struct {
+var connectionProperties = struct {
 	Location string
-	Username string
-	Password string
-	Cluster  *gocb.Cluster
+	Database string
+	//Username string
+	//Password string
+	Session *r.Session
 }{}
 
-// SetCouchbaseCredentials set the login credentials to Couchbase cluster
-func SetCouchbaseCredentials(location string, username string, password string) {
-	couchbaseCredentials.Location = location
-	couchbaseCredentials.Username = username
-	couchbaseCredentials.Password = password
+// SetConnectionProperties set the login credentials to Rethinkdb cluster
+func SetConnectionProperties(location string, database string) {
+	connectionProperties.Location = location
+	connectionProperties.Database = database
 
-	cluster, err := gocb.Connect("couchbase://" + couchbaseCredentials.Location)
+	session, err := r.Connect(r.ConnectOpts{
+		Address: location,
+	})
 	if err != nil {
-		log.Fatalln("cannot connect to couchbase: ", err)
+		log.Fatalln("cannot connect to vice-db: ", err)
 	}
-	couchbaseCredentials.Cluster = cluster
+	connectionProperties.Session = session
+
 }
 
-// CloseConnection closes all open connections to the Couchbase cluster
+// CloseConnection closes all open connections to the RethinkDB cluster
 func CloseConnection() {
 	// TODO
 }
@@ -45,46 +47,28 @@ func GenerateID(n int) string {
 	return string(b)
 }
 
-func getItem(item interface{}, id string, bucketName string) error {
-	bucket, err := couchbaseCredentials.Cluster.OpenBucket(bucketName, couchbaseCredentials.Password)
+func updateItem(item interface{}, id string, table string) error {
+	_, err := r.DB(connectionProperties.Database).Table(table).Get(id).Update(item).RunWrite(connectionProperties.Session)
 	if err != nil {
-		log.Printf("Error in persistence getItem: cannot open bucket %s: %s", bucketName, err)
-		return err
-	}
-	defer bucket.Close()
-	_, err = bucket.Get(id, item)
-	if err != nil {
-		log.Printf("Error in persistence getItem: cannot get itemId %s from bucket %s: %s", id, bucketName, err)
+		log.Printf("Error in persistence updateItem: cannot update itemId %s from table %s: %s", id, table, err)
 		return err
 	}
 	return nil
 }
 
-func updateItem(item interface{}, id string, bucketName string) error {
-	bucket, err := couchbaseCredentials.Cluster.OpenBucket(bucketName, couchbaseCredentials.Password)
+func createItem(item interface{}, table string) error {
+	_, err := r.DB(connectionProperties.Database).Table(table).Insert(item).RunWrite(connectionProperties.Session)
 	if err != nil {
-		log.Printf("Error in persistence updateItem: cannot open bucket %s: %s", bucketName, err)
-		return err
-	}
-	defer bucket.Close()
-	_, err = bucket.Replace(id, item, 0, 0)
-	if err != nil {
-		log.Printf("Error in persistence updateItem: cannot update itemId %s from bucket %s: %s", id, bucketName, err)
+		log.Printf("Error in persistence createItem: cannot insert item %v from table %s: %s", item, table, err)
 		return err
 	}
 	return nil
 }
 
-func deleteItem(id string, bucketName string) error {
-	bucket, err := couchbaseCredentials.Cluster.OpenBucket(bucketName, couchbaseCredentials.Password)
+func deleteItem(id string, table string) error {
+	_, err := r.DB(connectionProperties.Database).Table(table).Get(id).Delete().RunWrite(connectionProperties.Session)
 	if err != nil {
-		log.Printf("Error in persistence deleteItem: cannot open bucket %s: %s", bucketName, err)
-		return err
-	}
-	defer bucket.Close()
-	_, err = bucket.Remove(id, 0)
-	if err != nil {
-		log.Printf("Error in persistence deleteItem: cannot delete itemId %s from bucket %s: %s", id, bucketName, err)
+		log.Printf("Error in persistence deleteItem: cannot delete itemId %s from table %s: %s", id, table, err)
 		return err
 	}
 	return nil

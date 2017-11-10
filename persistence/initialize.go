@@ -2,110 +2,63 @@ package persistence
 
 import (
 	"log"
-	"time"
 
 	"github.com/vice-registry/vice-util/models"
-	gocb "gopkg.in/couchbase/gocb.v1"
+	r "gopkg.in/gorethink/gorethink.v3"
 )
 
-// InitViceCouchbase initializes an empty couchbase instance (e.g. creates admin account)
-func InitViceCouchbase() {
-	cluster, err := gocb.Connect("couchbase://" + couchbaseCredentials.Location)
-	if err != nil {
-		log.Fatalf("Cannot connect to couchbase: %s", err)
-	}
-
-	clusterManager := cluster.Manager(couchbaseCredentials.Username, couchbaseCredentials.Password)
-	createBucket(cluster, clusterManager, "vice-users")
-	createBucket(cluster, clusterManager, "vice-environments")
-	createBucket(cluster, clusterManager, "vice-images")
-	createBucket(cluster, clusterManager, "vice-deployments")
-
-	createAdminUser(cluster)
+// InitDatabase initializes an empty database instance (e.g. creates admin account)
+func InitDatabase() {
+	createDatabase(connectionProperties.Database)
+	createTable("users")
+	createIndex("users", "Username")
+	createTable("environments")
+	createIndex("environments", "Userid")
+	createTable("images")
+	createIndex("images", "Userid")
+	createTable("deployments")
+	createIndex("deployments", "Userid")
+	createAdminUser()
 }
 
-func bucketExists(clusterManager *gocb.ClusterManager, bucketname string) bool {
-	buckets, err := clusterManager.GetBuckets()
+func createDatabase(name string) {
+	_, err := r.DBCreate(name).RunWrite(connectionProperties.Session)
 	if err != nil {
-		log.Fatalf("Cannot get list of couchbase buckets: %s", err)
+		log.Printf("Database %s not created: %s", name, err)
 	}
-	for i := range buckets {
-		//log.Printf("bucket: %+v\n", buckets[i])
-		if buckets[i].Name == bucketname {
-			return true
-		}
-	}
-	return false
 }
 
-func createBucket(cluster *gocb.Cluster, clusterManager *gocb.ClusterManager, bucketname string) {
-	log.Printf("Create (if not exist) Couchbase bucket %s ...", bucketname)
-
-	// check if bucket exists
-	if bucketExists(clusterManager, bucketname) {
-		log.Printf("Couchbase Bucket %s found, will not create it.", bucketname)
-		return
-	}
-
-	// create bucket
-	settings := gocb.BucketSettings{
-		Name:     bucketname,
-		Quota:    256,
-		Replicas: 1,
-		Type:     gocb.Couchbase,
-		Password: couchbaseCredentials.Password,
-	}
-	err := clusterManager.InsertBucket(&settings)
+func createTable(name string) {
+	log.Printf("Create (if not exist) RethinkDB table %s ...", name)
+	_, err := r.DB(connectionProperties.Database).TableCreate(name, r.TableCreateOpts{
+		PrimaryKey: "ID",
+	}).RunWrite(connectionProperties.Session)
 	if err != nil {
-		log.Fatalf("Cannot create bucket %s: %s", bucketname, err)
+		log.Printf("Table %s not created: %s", name, err)
 	}
-	// wait for bucket
-	if !bucketExists(clusterManager, bucketname) {
-		log.Fatalf("Cannot find created bucket %s.", bucketname)
+}
+
+func createIndex(table string, field string) {
+	_, err := r.DB(connectionProperties.Database).Table(table).IndexCreate(field).RunWrite(connectionProperties.Session)
+	if err != nil {
+		log.Printf("Index for %s on Table %s not created: %s", field, table, err)
 	}
-	for i := 0; i < 100; i++ {
-		testBucket, err := cluster.OpenBucket(bucketname, couchbaseCredentials.Password)
+}
+
+func createAdminUser() {
+	//var admin models.User
+	admin, _ := GetUser("admin")
+	if admin == nil || admin.ID == "" {
+		// create admin user
+		var admin models.User
+		admin.ID = "admin"
+		admin.Username = "admin"
+		admin.Password = "admin"
+		admin.Email = "admin@vice-registry.org"
+		admin.Fullname = "Admin User"
+		err := createItem(admin, "users")
 		if err != nil {
-			log.Printf("Testing availability of bucket %s (try %d/10): %s", bucketname, i, err)
-			time.Sleep(1000 * time.Millisecond)
-		} else {
-			log.Printf("Timeout waiting for new bucket %s.", bucketname)
-			testBucket.Close()
-			// bucket available. go on.
-			break
+			log.Printf("Admin user not created: %s", err)
 		}
-	}
-
-	// create bucket primary index
-	bucket, err := cluster.OpenBucket(bucketname, couchbaseCredentials.Password)
-	if err != nil {
-		log.Fatalf("Cannot open bucket to create primary %s: %s", bucketname, err)
-	}
-	defer bucket.Close()
-	bucketManager := bucket.Manager("", "")
-	err = bucketManager.CreatePrimaryIndex("", true, false)
-	if err != nil {
-		log.Fatalf("Cannot create primary on %s: %s", bucketname, err)
-	}
-}
-
-func createAdminUser(cluster *gocb.Cluster) {
-	bucket, err := cluster.OpenBucket("vice-users", couchbaseCredentials.Password)
-	if err != nil {
-		log.Fatalf("Cannot create admin user, failed to open couchbase bucket vice-users: %s", err)
-	}
-
-	// define default admin user
-	var admin models.User
-	admin.ID = "admin"
-	admin.Username = "admin"
-	admin.Password = "admin"
-	admin.Email = "admin@vice-registry.org"
-	admin.Fullname = "Admin User"
-
-	// try to insert admin user
-	_, err = bucket.Insert(admin.ID, admin, 0)
-	if err != nil {
-		log.Printf("Admin user not created: %s", err)
 	}
 }
